@@ -18,32 +18,19 @@ func init() {
 
 func Run() {
 	input = inputs.Input(day)
-	part1()
-	part2()
+	part1and2()
 }
 
-func part1() {
-	sum := 0
-	s := schematicFromInput(input)
-	nums := numbersFromInput(input)
-
-	for _, num := range nums {
-		if num.adjacentToSymbol(s) {
-			sum += num.value()
-		}
-	}
-
-	result := sum
-	fmt.Printf("Part 1: %v\n", result)
-}
-
-func part2() {
-	sum := 0
+func part1and2() {
+	sum1, sum2 := 0, 0
 	s := schematicFromInput(input)
 	nums := numbersFromInput(input)
 	gears := make(map[point][]int)
 
 	for _, num := range nums {
+		if num.adjacentToSymbol(s) {
+			sum1 += num.value()
+		}
 		if gear, adj := num.adjacentToGear(s); adj {
 			gears[gear] = append(gears[gear], num.value())
 		}
@@ -52,11 +39,10 @@ func part2() {
 		if len(v) != 2 {
 			continue
 		}
-		sum += v[0] * v[1]
+		sum2 += v[0] * v[1]
 	}
 
-	result := sum
-	fmt.Printf("Part 2: %v\n", result)
+	fmt.Printf("Part 1: %v\nPart 2: %v\n", sum1, sum2)
 }
 
 type point struct {
