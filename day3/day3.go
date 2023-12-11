@@ -25,25 +25,11 @@ func Run() {
 func part1() {
 	sum := 0
 	s := schematicFromInput(input)
+	nums := numbersFromInput(input)
 
-	var number []byte
-	var adjacent bool
-	var y int
-	for i, v := range input {
-		if v == byte('\n') {
-			y++
-		}
-		if v >= '0' && v <= '9' {
-			number = append(number, v)
-			adjacent = adjacent || s.adjacentToSymbol(point{i % 141, y})
-			continue
-		}
-		if len(number) > 0 {
-			if adjacent {
-				sum += numberToInt(number)
-			}
-			number = number[:0]
-			adjacent = false
+	for _, num := range nums {
+		if num.adjacentToSymbol(s) {
+			sum += num.value()
 		}
 	}
 
@@ -54,33 +40,14 @@ func part1() {
 func part2() {
 	sum := 0
 	s := schematicFromInput(input)
-
+	nums := numbersFromInput(input)
 	gears := make(map[point][]int)
-	var number []byte
-	var gear point
-	var adjacent bool
-	var y int
-	for i, v := range input {
-		if v == byte('\n') {
-			y++
-		}
-		if v >= '0' && v <= '9' {
-			number = append(number, v)
-			if loc, ok := s.adjacentToGear(point{i % 141, y}); ok {
-				gear = loc
-				adjacent = true
-			}
-			continue
-		}
-		if len(number) > 0 {
-			if adjacent {
-				gears[gear] = append(gears[gear], numberToInt(number))
-			}
-			number = number[:0]
-			adjacent = false
+
+	for _, num := range nums {
+		if gear, adj := num.adjacentToGear(s); adj {
+			gears[gear] = append(gears[gear], num.value())
 		}
 	}
-
 	for _, v := range gears {
 		if len(v) != 2 {
 			continue
@@ -95,6 +62,10 @@ func part2() {
 type point struct {
 	x, y int
 }
+type number struct {
+	digits []byte
+	points []point
+}
 type schematic map[point]byte
 
 func schematicFromInput(input []byte) schematic {
@@ -107,24 +78,56 @@ func schematicFromInput(input []byte) schematic {
 	return s
 }
 
-func (s schematic) adjacentToSymbol(p point) bool {
-	x, y := p.x, p.y
-	return s.isSymbol(point{x - 1, y - 1}) || s.isSymbol(point{x - 1, y}) || s.isSymbol(point{x - 1, y + 1}) || s.isSymbol(point{x, y - 1}) || s.isSymbol(point{x, y + 1}) || s.isSymbol(point{x + 1, y - 1}) || s.isSymbol(point{x + 1, y}) || s.isSymbol(point{x + 1, y + 1})
+func numbersFromInput(input []byte) (o []number) {
+	y := 0
+	cur := number{}
+	for i, v := range input {
+		if v == byte('\n') {
+			y++
+		}
+		if v >= '0' && v <= '9' {
+			cur.digits = append(cur.digits, v)
+			cur.points = append(cur.points, point{i % 141, y})
+			continue
+		}
+		if len(cur.digits) > 0 {
+			o = append(o, cur)
+			cur = number{}
+		}
+	}
+	return o
 }
 
-func (s schematic) isSymbol(p point) bool {
-	switch s[p] {
-	case 0, '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.':
-		return false
-	default:
+func (n number) adjacentToSymbol(s schematic) bool {
+	for _, p := range n.points {
+		if s.adjacentToSymbol(p) {
+			return true
+		}
+	}
+	return false
+}
+
+func (n number) adjacentToGear(s schematic) (point, bool) {
+	for _, p := range n.points {
+		if gear, adj := s.adjacentToGear(p); adj {
+			return gear, true
+		}
+	}
+	return point{-1, -1}, false
+}
+
+func (s schematic) adjacentToSymbol(p point) bool {
+	for _, a := range adjacentPoints(p) {
+		if v := s[a]; v == 0 || v == '.' || (v >= '0' && v <= '9') {
+			continue
+		}
 		return true
 	}
+	return false
 }
 
 func (s schematic) adjacentToGear(p point) (point, bool) {
-	x, y := p.x, p.y
-	adjacencies := []point{{x - 1, y - 1}, {x - 1, y}, {x - 1, y + 1}, {x, y - 1}, {x, y + 1}, {x + 1, y - 1}, {x + 1, y}, {x + 1, y + 1}}
-	for _, a := range adjacencies {
+	for _, a := range adjacentPoints(p) {
 		if s[a] == '*' {
 			return a, true
 		}
@@ -132,7 +135,12 @@ func (s schematic) adjacentToGear(p point) (point, bool) {
 	return p, false
 }
 
-func numberToInt(in []byte) int {
-	out, _ := strconv.Atoi(string(in))
+func adjacentPoints(p point) []point {
+	x, y := p.x, p.y
+	return []point{{x - 1, y - 1}, {x - 1, y}, {x - 1, y + 1}, {x, y - 1}, {x, y + 1}, {x + 1, y - 1}, {x + 1, y}, {x + 1, y + 1}}
+}
+
+func (n number) value() int {
+	out, _ := strconv.Atoi(string(n.digits))
 	return out
 }
