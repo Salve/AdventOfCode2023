@@ -31,18 +31,21 @@ func Run() {
 func part1() {
 	result := 0
 	for _, line := range inputs.Lines(input) {
-		result += predict(nums(line))
+		result += predict(nums(line, false))
 	}
 	fmt.Printf("Part 1: %v\n", result)
 }
 
 func part2() {
-	result := "TODO"
+	result := 0
+	for _, line := range inputs.Lines(input) {
+		result += predict(nums(line, true))
+	}
 	fmt.Printf("Part 2: %v\n", result)
 }
 
 func predict(seq []int) int {
-	if slices.Max(seq) == 0 {
+	if allZero(seq) {
 		return 0
 	}
 	return seq[len(seq)-1] + predict(deltas(seq))
@@ -55,10 +58,22 @@ func deltas(seq []int) (o []int) {
 	return o
 }
 
-func nums(line string) (o []int) {
+func nums(line string, reverse bool) (o []int) {
 	for _, f := range strings.Fields(line) {
 		v, _ := strconv.Atoi(f)
 		o = append(o, v)
 	}
+	if reverse {
+		slices.Reverse(o)
+	}
 	return o
+}
+
+func allZero(seq []int) bool {
+	for _, v := range seq {
+		if v != 0 {
+			return false
+		}
+	}
+	return true
 }
