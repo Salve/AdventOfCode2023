@@ -30,34 +30,42 @@ func Run() {
 
 func part1() {
 	t := tilesFromInput(input)
-	start := t.start()
-	var result int
-	for _, p := range []point{start.north(), start.east(), start.south(), start.west()} {
-		if t.connectsTo(start, p) {
-			result = (1 + t.distance(start, p, start)) / 2
-			break
-		}
-	}
+	l := t.getLoop()
+	result := len(l) / 2
 
 	fmt.Printf("Part 1: %v\n", result)
 }
 
 func part2() {
-	result := "TODO"
+	t := tilesFromInput(input)
+	l := t.getLoop()
+	result := enclosedPoints(shoelace(l), len(l))
 	fmt.Printf("Part 2: %v\n", result)
 }
 
-func (t tiles) distance(prev, cur, destination point) int {
+func (t tiles) getLoop() []point {
+	start := t.start()
+	loop := []point{start}
+	for _, p := range []point{start.north(), start.east(), start.south(), start.west()} {
+		if t.connectsTo(start, p) {
+			t.path(start, p, start, &loop)
+			break // we don't need to traverse in both directions
+		}
+	}
+	return loop
+}
+
+func (t tiles) path(prev, cur, destination point, acc *[]point) {
+	*acc = append(*acc, cur)
 	for _, next := range t.connectionsFrom(cur) {
 		switch next {
 		case prev:
 			continue
 		case destination:
-			return 1
+			return
 		}
-		return 1 + t.distance(cur, next, destination)
+		t.path(cur, next, destination, acc)
 	}
-	panic("eof distance")
 }
 
 func (t tiles) connectionsFrom(p point) (o []point) {
@@ -126,4 +134,26 @@ func tilesFromInput(input []byte) tiles {
 		}
 	}
 	return t
+}
+
+// apparently there's something called a shoelace formula. news to me.
+func shoelace(points []point) int {
+	n := len(points)
+	area := 0
+
+	for i := 0; i < n-1; i++ {
+		area += points[i].x*points[i+1].y - points[i].y*points[i+1].x
+	}
+	area += points[n-1].x*points[0].y - points[n-1].y*points[0].x
+
+	if area < 0 {
+		area = -area
+	}
+
+	return area
+}
+
+// apparently there's something called picks theorem. news to me.
+func enclosedPoints(area int, numPoints int) int {
+	return (area - numPoints + 2) / 2
 }
