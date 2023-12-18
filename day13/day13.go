@@ -3,7 +3,6 @@ package day13
 import (
 	"bytes"
 	"fmt"
-	"github.com/Salve/AdventOfCode2023/inputs"
 	"github.com/Salve/AdventOfCode2023/registry"
 )
 
@@ -32,21 +31,16 @@ func init() {
 }
 
 func Run() {
-	patterns = patternsFromInput(inputs.Input(day))
-	//patterns = patternsFromInput(example)
+	//patterns = patternsFromInput(inputs.Input(day))
+	patterns = patternsFromInput(example)
 	part1()
 	part2()
 }
 
 func part1() {
 	result := 0
-	for i, p := range patterns {
-		sum := p.summarize()
-		result += sum
-		fmt.Printf("\n\nPattern %d: (%d)\n", i, sum)
-		for _, l := range p {
-			fmt.Println(string(l))
-		}
+	for _, p := range patterns {
+		result += p.summarize()
 	}
 
 	fmt.Printf("Part 1: %v\n", result)
@@ -57,24 +51,22 @@ func part2() {
 	fmt.Printf("Part 2: %v\n", result)
 }
 
-func (p pattern) summarize() int {
+func (p pattern) summarize(smudges int) int {
 	total := 0
 	for x := 0; x < len(p[0])-1; x++ {
 		if p.vertical(x, x+1) {
 			total += x + 1
-			fmt.Printf("vertical %d\n", x+1)
 		}
 	}
 	for y := 0; y < len(p)-1; y++ {
 		if p.horizontal(y, y+1) {
 			total += 100 * (y + 1)
-			fmt.Printf("horizontal %d\n", y+1)
 		}
 	}
 	return total
 }
 
-func (p pattern) vertical(x1, x2 int) bool {
+func (p pattern) vertical(x1, x2 int, smudges int) bool {
 	if x1 < 0 || x2 >= len(p[0]) {
 		return true
 	}
@@ -86,7 +78,7 @@ func (p pattern) vertical(x1, x2 int) bool {
 	return p.vertical(x1-1, x2+1)
 }
 
-func (p pattern) horizontal(y1, y2 int) bool {
+func (p pattern) horizontal(y1, y2 int, smudges int) bool {
 	if y1 < 0 || y2 >= len(p) {
 		return true
 	}
