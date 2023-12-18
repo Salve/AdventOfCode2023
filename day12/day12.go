@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/Salve/AdventOfCode2023/inputs"
 	"github.com/Salve/AdventOfCode2023/registry"
-	"slices"
 	"strconv"
 	"strings"
 )
@@ -12,17 +11,6 @@ import (
 const day = 12
 
 var input []byte
-
-var example = []byte(`???.### 1,1,3
-.??..??...?##. 1,1,3
-?#?#?#?#?#?#?#? 1,3,1,6
-????.#...#... 4,1,1
-????.######..#####. 1,6,5
-?###???????? 3,2,1
-`)
-
-var example2 = []byte(`?###???????? 3,2,1
-`)
 
 func init() {
 	registry.Register(day, Run)
@@ -35,78 +23,79 @@ func Run() {
 }
 
 func part1() {
-	sum := 0
+	result := 0
 	for _, line := range inputs.Lines(input) {
-		sum += variationsForLine(line)
+		result += variationsForLine(line, 1)
 	}
-	result := sum
 	fmt.Printf("Part 1: %v\n", result)
 }
 
 func part2() {
-	result := "TODO"
+	result := 0
+	for _, line := range inputs.Lines(input) {
+		result += variationsForLine(line, 5)
+	}
 	fmt.Printf("Part 2: %v\n", result)
 }
 
-func variationsForLine(line string) int {
-	springs, rest, _ := strings.Cut(line, " ")
-	groups := nums(rest)
-	return variations(springs, groups, 0)
+func variationsForLine(line string, expand int) int {
+	s, g, _ := strings.Cut(line, " ")
+	var springs, groups string
+	for i := 0; i < expand; i++ {
+		springs, groups = springs+s+"?", groups+g+","
+	}
+	springs, groups = strings.TrimSuffix(springs, "?"), strings.TrimSuffix(groups, ",")
+	return variations(springs+".", nums(groups)) // avoid a special case involving the last spring
 }
 
-func variations(springs string, groups []int, pos int) int {
-	if pos == len(springs) {
-		if valid(springs, groups) {
-			return 1
+var memo = map[string]int{}
+
+func memoVariations(springs string, groups []int) int {
+	key := fmt.Sprintf("%s%v", springs, groups)
+	if result, found := memo[key]; found {
+		return result
+	}
+	result := variations(springs, groups)
+	memo[key] = result
+	return result
+}
+
+func variations(springs string, groups []int) int {
+	if len(groups) == 0 {
+		if strings.Contains(springs, "#") {
+			return 0 // all groups are consumed but broken springs remain - not valid
 		}
-		return 0
+		return 1 // this is a valid variation, all groups have been accounted for, no broken springs remain
 	}
-	if springs[pos] != '?' {
-		return variations(springs, groups, pos+1)
-	}
-	vars := 0
-	vars += variations(operational(springs, pos), groups, pos+1)
-	vars += variations(damaged(springs, pos), groups, pos+1)
-	return vars
-}
+	// try placing the next group of damaged springs at each possible starting position that leaves room for all the
+	// known remaining groups of broken springs.
+	result := 0
+	for i := 0; i <= len(springs)-sum(groups)-len(groups)+1; i++ {
+		next := i + groups[0]
+		if strings.Contains(springs[:i], "#") {
+			break // if we've passed a known damaged spring, we know the next group has started, no need to keep looking
+		}
 
-func valid(springs string, groups []int) bool {
-	return slices.Equal(groups, calcGroups(springs))
-}
-
-func calcGroups(springs string) (o []int) {
-	inGroup := false
-	for _, spring := range springs {
-		switch spring {
-		case '.':
-			inGroup = false
-		case '#':
-			if !inGroup {
-				o = append(o, 0)
-				inGroup = true
-			}
-			o[len(o)-1]++
+		// skip this position if it overlaps with a known good spring, or runs straight into a known damaged spring
+		if !strings.Contains(springs[i:next], ".") && springs[next:next+1] != "#" {
+			// it's not impossible to place a group here, try to recurse
+			result += memoVariations(springs[next+1:], groups[1:])
 		}
 	}
-	return o
-}
-
-func operational(springs string, pos int) string {
-	b := []byte(springs)
-	b[pos] = '.'
-	return string(b)
-}
-
-func damaged(springs string, pos int) string {
-	b := []byte(springs)
-	b[pos] = '#'
-	return string(b)
+	return result
 }
 
 func nums(line string) (o []int) {
 	for _, f := range strings.Split(line, ",") {
 		v, _ := strconv.Atoi(f)
 		o = append(o, v)
+	}
+	return o
+}
+
+func sum(a []int) (o int) {
+	for _, v := range a {
+		o += v
 	}
 	return o
 }
