@@ -1,10 +1,11 @@
 package day15
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/Salve/AdventOfCode2023/inputs"
 	"github.com/Salve/AdventOfCode2023/registry"
+	"slices"
+	"strings"
 )
 
 const day = 15
@@ -25,18 +26,27 @@ func Run() {
 
 func part1() {
 	result := 0
-	for _, step := range bytes.Split(bytes.TrimSuffix(input, []byte("\n")), []byte(",")) {
-		result += HASH(step)
+	for _, step := range strings.Split(strings.TrimSuffix(string(input), "\n"), ",") {
+		result += HASH(string(step))
 	}
 	fmt.Printf("Part 1: %v\n", result)
 }
 
 func part2() {
-	result := "TODO"
+	hm := HASHMAP{}
+	for _, op := range strings.Split(strings.TrimSuffix(string(input), "\n"), ",") {
+		l := len(op)
+		if strings.Contains(op, "-") {
+			hm.rm(op[0 : l-1])
+			continue
+		}
+		hm.add(lens{op[0 : l-2], int(op[l-1] - '0')})
+	}
+	result := hm.focusPower()
 	fmt.Printf("Part 2: %v\n", result)
 }
 
-func HASH(in []byte) int {
+func HASH(in string) int {
 	cv := 0
 	for _, c := range in {
 		cv += int(c)
@@ -44,4 +54,42 @@ func HASH(in []byte) int {
 		cv %= 256
 	}
 	return cv
+}
+
+type lens struct {
+	label       string
+	focalLength int
+}
+
+type HASHMAP [256][]lens
+
+func (hm *HASHMAP) focusPower() int {
+	total := 0
+	for box, slots := range hm {
+		for slot, lens := range slots {
+			total += (box + 1) * (slot + 1) * lens.focalLength
+		}
+	}
+	return total
+}
+
+func (hm *HASHMAP) rm(label string) {
+	box := HASH(label)
+	for slot, lens := range hm[box] {
+		if lens.label == label {
+			hm[box] = slices.Delete(hm[box], slot, slot+1)
+			return
+		}
+	}
+}
+
+func (hm *HASHMAP) add(nl lens) {
+	box := HASH(nl.label)
+	for i, ol := range hm[box] {
+		if ol.label == nl.label {
+			hm[box][i] = nl
+			return
+		}
+	}
+	hm[box] = append(hm[box], nl)
 }
