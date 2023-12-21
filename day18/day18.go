@@ -41,29 +41,39 @@ func Run() {
 
 func part1() {
 
-	site := digsiteFromInput(input)
+	site := digsiteFromInput(input, false)
 	area := shoelace(site)
 	result := totalPoints(area, len(site))
 	fmt.Printf("Part 1: %v\n", result)
 }
 
 func part2() {
-	result := "TODO"
+	site := digsiteFromInput(input, true)
+	area := shoelace(site)
+	result := totalPoints(area, len(site))
 	fmt.Printf("Part 2: %v\n", result)
 }
 
-func digsiteFromInput(input []byte) []image.Point {
+func digsiteFromInput(input []byte, p2 bool) []image.Point {
 	cur := image.Point{0, 0}
 	o := []image.Point{}
 	for _, line := range inputs.Lines(input) {
 		s := strings.Split(string(line), " ")
-		dir, dist := s[0], dropErr(s[1], strconv.Atoi)
+		dir, dist := dirs[s[0][0]], dropErr(s[1], strconv.Atoi)
+		if p2 {
+			dir, dist = decode(s[2])
+		}
 		for i := 0; i < dist; i++ {
-			cur = cur.Add(dirs[dir[0]])
+			cur = cur.Add(dir)
 			o = append(o, cur)
 		}
 	}
 	return o
+}
+
+func decode(in string) (image.Point, int) {
+	d, _ := strconv.ParseInt(in[2:7], 16, 64)
+	return dirs[in[7]], int(d)
 }
 
 func shoelace(points []image.Point) int {
@@ -91,6 +101,10 @@ var dirs = map[byte]image.Point{
 	'R': {1, 0},
 	'D': {0, 1},
 	'L': {-1, 0},
+	'3': {0, -1},
+	'0': {1, 0},
+	'1': {0, 1},
+	'2': {-1, 0},
 }
 
 func num(a string) int {
