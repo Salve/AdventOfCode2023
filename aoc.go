@@ -13,6 +13,7 @@ import (
 	_ "github.com/Salve/AdventOfCode2023/day15"
 	_ "github.com/Salve/AdventOfCode2023/day16"
 	_ "github.com/Salve/AdventOfCode2023/day17"
+	_ "github.com/Salve/AdventOfCode2023/day18"
 	_ "github.com/Salve/AdventOfCode2023/day2"
 	_ "github.com/Salve/AdventOfCode2023/day3"
 	_ "github.com/Salve/AdventOfCode2023/day4"
