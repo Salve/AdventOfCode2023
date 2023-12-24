@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Salve/AdventOfCode2023/inputs"
 	"github.com/Salve/AdventOfCode2023/registry"
+	"maps"
 	"strconv"
 	"strings"
 )
@@ -53,6 +54,45 @@ func part1() {
 	fmt.Printf("Part 1: %v\n", result)
 }
 
+func part2() {
+	flows, _ := flowsAndPartsFromInput(input)
+
+	ranges := attrRanges{
+		'x': {1, 4000},
+		'm': {1, 4000},
+		'a': {1, 4000},
+		's': {1, 4000},
+	}
+
+	result := 0
+	for _, r := range acceptedRanges(0, "in", flows, ranges) {
+		xRange := r['x'][1] - r['x'][0] + 1
+		mRange := r['m'][1] - r['m'][0] + 1
+		aRange := r['a'][1] - r['a'][0] + 1
+		sRange := r['s'][1] - r['s'][0] + 1
+
+		combinations := xRange * mRange * aRange * sRange
+		result += combinations
+	}
+	fmt.Printf("Part 2: %v\n", result)
+}
+
+func acceptedRanges(i int, flow string, flows map[string][]string, ranges attrRanges) []attrRanges {
+	if flow == "A" {
+		return []attrRanges{ranges}
+	}
+	if flow == "R" {
+		return nil
+	}
+	step := flows[flow][i]
+	condition, jump, found := strings.Cut(step, ":")
+	if !found {
+		return acceptedRanges(0, step, flows, ranges)
+	}
+	rangesTrue, rangesFalse := constrain(ranges, condition)
+	return append(acceptedRanges(0, jump, flows, rangesTrue), acceptedRanges(i+1, flow, flows, rangesFalse)...)
+}
+
 func accepted(part map[byte]int, flow string, flows map[string][]string) bool {
 	if flow == "A" {
 		return true
@@ -72,6 +112,31 @@ func accepted(part map[byte]int, flow string, flows map[string][]string) bool {
 	return true
 }
 
+func constrain(ranges attrRanges, condition string) (cTrue, cFalse attrRanges) {
+	cTrue, cFalse = maps.Clone(ranges), maps.Clone(ranges)
+	attr, val := ranges[condition[0]], num(condition[2:])
+	attrTrue, attrFalse := attr, attr
+	switch condition[1] {
+	case '<':
+		if attr[1] >= val {
+			attrTrue[1] = val - 1
+		}
+		if attr[0] < val {
+			attrFalse[0] = val
+		}
+	case '>':
+		if attr[0] <= val {
+			attrTrue[0] = val + 1
+		}
+		if attr[1] > val {
+			attrFalse[1] = val
+		}
+	}
+	cTrue[condition[0]] = attrTrue
+	cFalse[condition[0]] = attrFalse
+	return cTrue, cFalse
+}
+
 func conditionMet(part map[byte]int, condition string) bool {
 	switch condition[1] {
 	case '<':
@@ -80,11 +145,6 @@ func conditionMet(part map[byte]int, condition string) bool {
 		return part[condition[0]] > num(condition[2:])
 	}
 	panic("condition")
-}
-
-func part2() {
-	result := "TODO"
-	fmt.Printf("Part 2: %v\n", result)
 }
 
 func num(i string) int {
@@ -116,3 +176,5 @@ func partValue(part map[byte]int) (sum int) {
 	}
 	return sum
 }
+
+type attrRanges map[byte][2]int
